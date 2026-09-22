@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { BubbleClient } from '../src/client.ts';
 import { dumpApp, snapshot, snapshotLog, snapshotDiff, listPages, listReusables, searchSnapshot, outlinePage, pathOf, LEGEND } from '../src/app.ts';
 import { setPath, createNode, deleteNode, undo, readJournal } from '../src/edits.ts';
-import { openBrowser, ensureSession, screenshot, env, DATA_DIR } from '../src/session.ts';
+import { openBrowser, ensureSession, screenshot, preview, env, DATA_DIR } from '../src/session.ts';
 
 const HELP = `bubble <command> [args]            (app: $BUBBLE_APP_ID or --app <id>, version: --version test)
 
@@ -43,6 +43,7 @@ Observe
   runs                          workflow run counts
   versions                      app versions/branches
   screenshot [page] [--tab Design|Workflow|Data|Logs]   PNG of the editor (path printed)
+  preview [path]                full-page PNG of the RUNNING app (catches what the editor hides)
 
 Escape hatch
   raw <endpoint> [json]         POST /appeditor/<endpoint> with a JSON body (see docs/PROTOCOL.md for the list)
@@ -156,6 +157,8 @@ async function main() {
     case 'runs': return print(await client().workflowRuns());
     case 'versions': return print(await client().versions());
     case 'screenshot': return print({ screenshot: await screenshot(client().appId, rest[0] ?? 'index', tab, client().version) });
+
+    case 'preview': return print({ preview: await preview(client().appId, rest[0] ?? '', client().version) });
 
     case 'raw': return print(await client().post(rest[0], rest[1] ? JSON.parse(rest[1]) : { appname: client().appId, app_version: client().version }));
 

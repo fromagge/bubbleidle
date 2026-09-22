@@ -90,3 +90,21 @@ export async function screenshot(appId: string, pageName = 'index', tab = 'Desig
   } finally { await ctx.close(); await browser.close(); }
   return file;
 }
+
+/** Screenshot the *running* app (not the editor). The editor can look fine while the page doesn't render. */
+export async function preview(appId: string, pagePath = '', version = env.version, fullPage = true): Promise<string> {
+  const file = join(DATA_DIR, `preview-${appId}-${pagePath.replace(/\W+/g, '_') || 'index'}.png`);
+  const base = `https://${appId}.bubbleapps.io${version === 'live' ? '' : `/version-${version}`}/${pagePath}`;
+  const { browser, ctx, page } = await openBrowser();
+  try {
+    await ensureSession(page);
+    await page.goto(base, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+    // Bubble lazy-renders below the fold: scroll through before capturing.
+    const h = await page.evaluate(() => document.body.scrollHeight);
+    for (let y = 0; y < h; y += 600) { await page.mouse.wheel(0, 600); await page.waitForTimeout(250); }
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: file, fullPage });
+  } finally { await ctx.close(); await browser.close(); }
+  return file;
+}

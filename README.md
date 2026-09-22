@@ -78,10 +78,19 @@ The repo ships agent instructions so a fresh agent needs no explanation:
 | `set <path> <json>`, `create <collection> <json>`, `delete <path>` | edits (journaled) |
 | `undo [n]`, `journal [n]` | safety net |
 | `logs [--since 2h] [--errors]`, `runs`, `versions` | observability |
-| `screenshot [page] [--tab Design]` | see the editor |
+| `screenshot [page] [--tab Design]`, `preview [path]` | see the editor / the running app |
 | `raw <endpoint> [json]` | call any of ~200 editor endpoints |
 
 Flags: `--app <id>` (default `$BUBBLE_APP_ID`), `--version test|live|<branch>` (writes to `live` are refused).
+
+## Worked example
+
+[`examples/yaek-clone.ts`](examples/yaek-clone.ts) rebuilds the yaek.app landing page — nav, hero, a
+terminal panel, a five-item timeline, footer, ~60 elements — in one run, then snapshots it:
+
+```bash
+node examples/yaek-clone.ts --wipe
+```
 
 ## Background mode
 

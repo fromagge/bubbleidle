@@ -41,6 +41,22 @@ Run `bubble legend` for the list in machine form.
 Stored at `%p3.<pageKey>.%el.<elementKey>` (nested groups: `…%el.<groupKey>.%el.<childKey>`).
 
 Icon: `"%p": {"%9i": "fa fa-sitemap", "%ic": "rgba(158,158,158,1)", ...}`.
+
+### Two rules that cost real debugging time ⚠️
+
+**1. A Text element whose `%h` is smaller than one rendered line silently disappears** from the running
+page. Not truncated — absent from the DOM. The editor still shows it, and `run_issue_checker` reports
+nothing. Give every Text at least `ceil(%fs × %lh) + ~6` px of height (or set it to fit height).
+This is the single easiest way to build a page that looks right in the editor and renders half-empty.
+
+**2. Fonts.** `%f` is `"Family:::weight"` (`"Arial:::"`, `"var(--font_default):::600"`) but only resolves
+for fonts **registered in the app**. Naming any Google font there (`"Geist:::500"`) silently falls back to
+the app default — and adding `settings.client_safe.font_tokens` entries does not load the webfont either.
+What does work on any app: the raw CSS properties **`font_family`** (e.g.
+`"ui-monospace, SFMono-Regular, Menlo, monospace"`) and **`font_weight`** (`"600"`) in `%p`.
+
+Also worth knowing: Bubble **lazy-renders below the fold**, so inspecting the live DOM without scrolling
+makes elements look missing when they're fine. `bubble preview` scrolls before capturing.
 Reusable instance: `{"%x":"CustomElement","%dn":"Header A","%p":{"%ci":"AId", ...}}`.
 
 ### Conditional states (`%s`)

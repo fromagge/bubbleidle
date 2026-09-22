@@ -62,6 +62,25 @@ Other events: `PageLoaded` (no `%ei`), `ConditionTrue` (`"%p": {"%c": <expressio
 `DoInterval`, `LoggedIn`. Action shapes: see [APP-JSON.md](APP-JSON.md#workflows), or copy a real one:
 `bubble find <id>` on an action you like, then `bubble get <path>`.
 
+## Verify a page really renders ✅ verified
+
+```bash
+bubble preview              # full-page PNG of the RUNNING app (scrolls first, so lazy content loads)
+bubble screenshot index     # the editor's view
+```
+Check both. An element with too little height renders in the editor and vanishes on the live page
+(see [APP-JSON.md](APP-JSON.md#two-rules-that-cost-real-debugging-time-)).
+
+## Build a whole page programmatically ✅ verified
+
+`examples/yaek-clone.ts` rebuilds a real landing page (~60 elements: nav, hero, terminal panel, timeline,
+footer) in about 90 seconds of API calls. It's the best worked example of element JSON, positioning,
+colours, fonts and text sizing:
+
+```bash
+node examples/yaek-clone.ts --wipe        # --wipe clears the page's existing elements first
+```
+
 ## Check for problems ✅ verified
 
 ```bash
