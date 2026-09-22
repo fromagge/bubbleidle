@@ -1,0 +1,18 @@
+# systemd *user* service: install to ~/.config/systemd/user/bubbleidle.service
+#   systemctl --user daemon-reload && systemctl --user enable --now bubbleidle
+#   journalctl --user -u bubbleidle -f
+[Unit]
+Description=bubbleidle — watch a Bubble app for changes and errors
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/fromagge/bubbleidle
+ExecStart=/usr/bin/node src/watcher.ts
+Environment=BUBBLEIDLE_INTERVAL=300
+# Environment=BUBBLEIDLE_ON_EVENT=claude -p "Triage this Bubble event; report only, do not edit."
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

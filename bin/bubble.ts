@@ -2,23 +2,23 @@
 // bubble — CLI over Bubble's internal editor API. Every command prints JSON (or plain text for outlines/diffs).
 // Run `node bin/bubble.ts help` for usage.
 import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { BubbleClient } from '../src/client.ts';
-import { dumpApp, snapshot, snapshotLog, snapshotDiff, snapshotDir, listPages, outlinePage, pathOf, LEGEND } from '../src/app.ts';
+import { dumpApp, snapshot, snapshotLog, snapshotDiff, listPages, listReusables, searchSnapshot, outlinePage, pathOf, LEGEND } from '../src/app.ts';
 import { setPath, createNode, deleteNode, undo, readJournal } from '../src/edits.ts';
-import { openBrowser, ensureSession, editorUrl, env, DATA_DIR } from '../src/session.ts';
-import { execFileSync } from 'node:child_process';
+import { openBrowser, ensureSession, screenshot, env, DATA_DIR } from '../src/session.ts';
 
 const HELP = `bubble <command> [args]            (app: $BUBBLE_APP_ID or --app <id>, version: --version test)
 
 Session
+  doctor                        check config, session, browser, permissions
   login                         log in headlessly, save cookies to .state/
   apps                          list apps (id + name) visible to the account
   perms                         current account's permissions on the app
 
 Read
   pages                         list pages and their paths
-  outline <page>                element tree + workflows of a page
+  reusables                     list reusable elements (definitions live under %ed)
+  outline <page|reusable>       element tree + workflows of a page or reusable element
   get <path> [--deep]           value at a dotted path, e.g. %p3.bTGbC.%el  (--deep expands chunked nodes)
   find <id>                     resolve an object id (e.g. bTGYf) to its path
   dump [--out file]             full app JSON
@@ -81,6 +81,21 @@ async function main() {
     case 'help': case '--help': case '-h': return print(HELP);
     case 'legend': return print(LEGEND);
 
+    case 'doctor': {
+      const report: Record<string, unknown> = {};
+      report.config = { app: appFlag ?? env.appId ?? '(unset)', version: versionFlag ?? env.version, email: env.email ? env.email.replace(/(.).*@/, '$1***@') : '(unset)', state: DATA_DIR };
+      if (!env.email || !env.password) report.credentials = 'MISSING — see .env.example';
+      try {
+        const { browser, ctx, page } = await openBrowser();
+        try { await ensureSession(page); report.session = 'ok'; } finally { await ctx.close(); await browser.close(); }
+      } catch (e: any) { report.session = `FAILED: ${e?.message ?? e}`; }
+      if (env.appId || appFlag) {
+        try { report.permissions = await client().permissions(); } catch (e: any) { report.permissions = `FAILED: ${e?.message ?? e}`; }
+        try { report.versions = Object.keys(await client().versions()); } catch { /* ignore */ }
+      } else report.permissions = 'skipped (no app id; run `bubble apps`)';
+      return print(report);
+    }
+
     case 'login': {
       const { browser, ctx, page } = await openBrowser();
       try { await ensureSession(page); } finally { await ctx.close(); await browser.close(); }
@@ -108,6 +123,7 @@ async function main() {
     case 'perms': return print(await client().permissions());
 
     case 'pages': return print(await listPages(client()));
+    case 'reusables': return print(await listReusables(client()));
     case 'outline': return print(await outlinePage(client(), rest[0] ?? 'index'));
     case 'get': {
       const c = client();
@@ -119,11 +135,7 @@ async function main() {
       if (out) { writeFileSync(out, JSON.stringify(app, null, 2)); return print({ written: out }); }
       return print(app);
     }
-    case 'search': {
-      const dir = snapshotDir(client().appId);
-      try { return print(execFileSync('git', ['-C', dir, 'grep', '-n', '-i', '-F', rest.join(' ')], { encoding: 'utf8' })); }
-      catch { return print('(no matches — or no snapshot yet; run `bubble snapshot`)'); }
-    }
+    case 'search': return print(searchSnapshot(client().appId, rest.join(' ')));
 
     case 'snapshot': return print(await snapshot(client(), rest.join(' ') || 'snapshot'));
     case 'history': return print(snapshotLog(client().appId, Number(rest[0] ?? 20)));
@@ -143,19 +155,7 @@ async function main() {
     }
     case 'runs': return print(await client().workflowRuns());
     case 'versions': return print(await client().versions());
-    case 'screenshot': {
-      const c = client();
-      const { browser, ctx, page } = await openBrowser();
-      const file = join(DATA_DIR, `screenshot-${c.appId}-${rest[0] ?? 'index'}-${tab}.png`);
-      try {
-        await ensureSession(page);
-        await page.goto(editorUrl(c.appId, tab, rest[0] ?? 'index', c.version), { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
-        await page.waitForTimeout(5000);
-        await page.screenshot({ path: file });
-      } finally { await ctx.close(); await browser.close(); }
-      return print({ screenshot: file });
-    }
+    case 'screenshot': return print({ screenshot: await screenshot(client().appId, rest[0] ?? 'index', tab, client().version) });
 
     case 'raw': return print(await client().post(rest[0], rest[1] ? JSON.parse(rest[1]) : { appname: client().appId, app_version: client().version }));
 

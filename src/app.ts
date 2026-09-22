@@ -7,13 +7,14 @@ import { DATA_DIR } from './session.ts';
 
 // load_multiple_paths can't list the root, so these are the known top-level keys.
 export const TOP_KEYS = [
-  '_id', 'settings', 'styles', 'user_types', 'option_sets', '%p3', 'mobile_views', 'element_definitions',
+  '_id', 'settings', 'styles', 'user_types', 'option_sets', '%p3', '%ed', 'mobile_views', 'element_definitions',
   'api', 'global_expressions', '_index', 'uid_counter', 'last_change', 'last_change_date', 'creation_date',
 ];
 
 // Short keys used throughout the app JSON.
 export const LEGEND: Record<string, string> = {
-  '%p3': 'pages', '%el': 'child elements', '%wf': 'workflows', '%p': 'properties', '%x': 'type',
+  '%p3': 'pages', '%ed': 'reusable element definitions', '%ci': 'reusable definition id (on a CustomElement instance)',
+  '%ei': 'element id reference', '%f3': 'data type fields', '%s': 'conditional states', '%x=Message': 'operator/field access (%nm)', '%el': 'child elements', '%wf': 'workflows', '%p': 'properties', '%x': 'type',
   '%nm': 'name', '%dn': 'display name', '%d': 'display', '%s1': 'style id', '%c': 'condition',
   '%a': 'argument', '%n': 'next (chained expression)', '%t': 'top', '%l': 'left', '%w': 'width', '%h': 'height',
   '%z': 'z-index', '%e': 'text entries', '%v': 'value', actions: 'workflow actions keyed by order',
@@ -80,13 +81,20 @@ export async function listPages(c: BubbleClient) {
   return Object.entries(idx ?? {}).map(([name, path]) => ({ name, path: path.split('.') }));
 }
 
+/** Reusable elements: name, definition id and path (definitions live under %ed). */
+export async function listReusables(c: BubbleClient) {
+  const { values: [names, idToPath] } = await c.loadPaths([['_index', 'custom_name_to_id'], ['_index', 'id_to_path']]);
+  return Object.values((names ?? {}) as Record<string, { custom_id: string; name: string }>)
+    .map(({ custom_id, name }) => ({ name, id: custom_id, path: ((idToPath as Record<string, string>)?.[custom_id] ?? '').split('.') }));
+}
+
 /** Compact outline of a page: element tree and workflows with types and names. */
 export async function outlinePage(c: BubbleClient, pageName: string): Promise<string> {
-  const pages = await listPages(c);
-  const pg = pages.find((p) => p.name === pageName);
-  if (!pg) throw new Error(`page not found: ${pageName}; have ${pages.map((p) => p.name).join(', ')}`);
+  const all = [...await listPages(c), ...(await listReusables(c)).map((r) => ({ name: r.name, path: r.path }))];
+  const pg = all.find((p) => p.name === pageName);
+  if (!pg) throw new Error(`page/reusable not found: ${pageName}; have ${all.map((p) => p.name).join(', ')}`);
   const node = (await c.loadDeep(pg.path)) as any;
-  const lines: string[] = [`page ${pageName}  path=${pg.path.join('.')}  id=${node?.id}`];
+  const lines: string[] = [`${pg.path[0] === '%ed' ? 'reusable' : 'page'} ${pageName}  path=${pg.path.join('.')}  id=${node?.id}`];
   const walk = (els: Record<string, any> | undefined, depth: number, base: string) => {
     for (const [key, el] of Object.entries<any>(els ?? {})) {
       if (key === 'length') continue;
@@ -103,4 +111,13 @@ export async function outlinePage(c: BubbleClient, pageName: string): Promise<st
     lines.push(`  - ${wf['%x']} "${wf['%p']?.['%dn'] ?? wf['%dn'] ?? ''}" id=${wf.id} key=${pg.path.join('.')}.%wf.${key}  actions: ${acts || '(none)'}`);
   }
   return lines.join('\n');
+}
+
+/** Case-insensitive fixed-string grep over the latest snapshot. */
+export function searchSnapshot(appId: string, text: string): string {
+  try {
+    return execFileSync('git', ['-C', snapshotDir(appId), 'grep', '-n', '-i', '-F', text], { encoding: 'utf8', maxBuffer: 64 << 20 });
+  } catch {
+    return '(no matches, or no snapshot yet: run snapshot first)';
+  }
 }

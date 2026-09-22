@@ -99,7 +99,8 @@ export class BubbleClient {
   async loadSingle(path: string[], hash: string): Promise<unknown> {
     const enc = path.map(encodeSegment).join('/');
     const r = await this.request('GET', `/appeditor/load_single_path/${this.appId}/${this.version}/${hash}/${enc}`);
-    return r.data;
+    // Large nodes come back as a key list instead of data; loadDeep() expands those.
+    return r.keys ? { __keys: r.keys } : r.data;
   }
 
   async load(path: string[]): Promise<unknown> {

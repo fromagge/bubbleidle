@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "bubble": {
+      "command": "node",
+      "args": ["/absolute/path/to/bubbleidle/src/mcp.ts"],
+      "env": { "BUBBLE_APP_ID": "myapp" }
+    }
+  }
+}

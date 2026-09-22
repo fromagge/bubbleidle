@@ -42,15 +42,45 @@ export async function setPath(c: BubbleClient, path: string[], value: unknown) {
  * Assigns fresh uids for the collection key and the node's id, and registers it in _index.id_to_path.
  */
 export async function createNode(c: BubbleClient, collectionPath: string[], body: Record<string, unknown>, intentName = 'CreateElement') {
-  const { uids: [id, key], counter } = await c.reserveUids(2);
+  // Nested objects that need their own ids too: workflow actions, and child elements given inline.
+  const nested = findNested(body);
+  const { uids, counter } = await c.reserveUids(2 + nested.length);
+  const [id, key, ...childIds] = uids;
   const path = [...collectionPath, key];
-  const node = { ...body, id };
+  const node = structuredClone(body) as Record<string, unknown>;
+  node.id = id;
+  nested.forEach((rel, i) => { setIn(node, rel, childIds[i]); });
+
   const res = await journaledWrite(c, `create ${intentName}`, [
     { path: ['_index', 'id_to_path', id], body: path.join('.') },
+    ...nested.map((rel, i) => ({ path: ['_index', 'id_to_path', childIds[i]], body: [...path, ...rel].join('.') })),
     { path, body: node, intent: { name: intentName, source_appname: '' } },
     { path: ['_index', 'issues_list', id], body: '[]' },
   ], counter);
-  return { ...res, id, key, path };
+  return { ...res, id, key, path, nestedIds: Object.fromEntries(nested.map((rel, i) => [rel.join('.'), childIds[i]])) };
+}
+
+/** Relative paths of nested nodes that need an id (actions and inline child elements without one). */
+function findNested(node: unknown, base: string[] = []): string[][] {
+  const out: string[][] = [];
+  if (!node || typeof node !== 'object') return out;
+  for (const collection of ['actions', '%el', '%wf', '%s']) {
+    const coll = (node as Record<string, unknown>)[collection];
+    if (!coll || typeof coll !== 'object') continue;
+    for (const [k, v] of Object.entries(coll as Record<string, unknown>)) {
+      if (k === 'length' || !v || typeof v !== 'object') continue;
+      const rel = [...base, collection, k];
+      if (!(v as Record<string, unknown>).id) out.push(rel);
+      out.push(...findNested(v, rel));
+    }
+  }
+  return out;
+}
+
+function setIn(obj: Record<string, unknown>, rel: string[], id: string) {
+  let cur: any = obj;
+  for (const seg of rel) cur = cur[seg];
+  cur.id = id;
 }
 
 /** Delete a node and its _index.id_to_path entries (including nested children). */
@@ -59,7 +89,10 @@ export async function deleteNode(c: BubbleClient, path: string[]) {
   if (node == null) throw new Error(`nothing at ${path.join('.')}`);
   const ids = collectIds(node);
   return journaledWrite(c, 'delete', [
-    ...ids.map((id) => ({ path: ['_index', 'id_to_path', id], body: null })),
+    ...ids.flatMap((id) => [
+      { path: ['_index', 'id_to_path', id], body: null },
+      { path: ['_index', 'issues_list', id], body: null },
+    ]),
     { path, body: null, intent: { name: 'RemoveElement', source_appname: '' } },
   ]);
 }

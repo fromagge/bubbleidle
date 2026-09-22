@@ -76,3 +76,17 @@ export async function ensureSession(page: Page): Promise<void> {
 export function editorUrl(appId: string, tab = 'Design', pageName = 'index', version = env.version) {
   return `https://bubble.io/page?id=${appId}&tab=${tab}&name=${pageName}${version === 'test' ? '' : `&version=${version}`}`;
 }
+
+/** Screenshot the editor (e.g. to visually verify an edit). Returns the PNG path. */
+export async function screenshot(appId: string, pageName = 'index', tab = 'Design', version = env.version): Promise<string> {
+  const file = join(DATA_DIR, `screenshot-${appId}-${pageName.replace(/\W+/g, '_')}-${tab}.png`);
+  const { browser, ctx, page } = await openBrowser();
+  try {
+    await ensureSession(page);
+    await page.goto(editorUrl(appId, tab, pageName, version), { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+    await page.waitForTimeout(5000);
+    await page.screenshot({ path: file });
+  } finally { await ctx.close(); await browser.close(); }
+  return file;
+}
