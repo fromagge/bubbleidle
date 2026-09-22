@@ -1,0 +1,23 @@
+{
+  "name": "bubbleidle",
+  "version": "1.0.0",
+  "description": "Drive the Bubble.io editor from any AI agent: read, edit, logs, snapshots, via Bubble's internal editor API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bubble": "node bin/bubble.ts",
+    "mcp": "node src/mcp.ts",
+    "watch": "node src/watcher.ts"
+  },
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv": "^18.0.3",
+    "playwright-core": "^1.63.0",
+    "zod": "^4.6.5"
+  },
+  "bin": {
+    "bubble": "bin/bubble.ts"
+  }
+}
