@@ -41,6 +41,7 @@ Run `bubble legend` for the list in machine form.
 Stored at `%p3.<pageKey>.%el.<elementKey>` (nested groups: `…%el.<groupKey>.%el.<childKey>`).
 
 Icon: `"%p": {"%9i": "fa fa-sitemap", "%ic": "rgba(158,158,158,1)", ...}`.
+Reusable instance: `{"%x":"CustomElement","%dn":"Header A","%p":{"%ci":"AId", ...}}`.
 
 ### Two rules that cost real debugging time ⚠️
 
@@ -57,7 +58,6 @@ What does work on any app: the raw CSS properties **`font_family`** (e.g.
 
 Also worth knowing: Bubble **lazy-renders below the fold**, so inspecting the live DOM without scrolling
 makes elements look missing when they're fine. `bubble preview` scrolls before capturing.
-Reusable instance: `{"%x":"CustomElement","%dn":"Header A","%p":{"%ci":"AId", ...}}`.
 
 ### Conditional states (`%s`)
 ```json
