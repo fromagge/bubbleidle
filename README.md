@@ -98,15 +98,10 @@ The repo ships agent instructions so a fresh agent needs no explanation:
 
 Flags: `--app <id>` (default `$BUBBLE_APP_ID`), `--version test|live|<branch>` (writes to `live` are refused).
 
-## Worked example
+## Building UI
 
-[`examples/landing-page.ts`](examples/landing-page.ts) builds a complete landing page — nav, hero, a
-terminal panel with a staggered reveal animation, a five-item timeline of cards with badges, footer;
-~80 elements and a page-load workflow — in one run, then snapshots it:
-
-```bash
-node examples/landing-page.ts --wipe
-```
+Whole pages can be generated: nav, hero, cards, badges, terminal panels, and reveal animations driven by a
+`PageLoaded` workflow. See [docs/RECIPES.md](docs/RECIPES.md#build-a-whole-page-programmatically-verified).
 
 To reproduce an existing design instead of inventing one, extract its real values first:
 

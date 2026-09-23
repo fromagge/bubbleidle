@@ -99,7 +99,6 @@ Log rows carry the event/action names and ids; `find <id>` maps those to paths, 
   can render in the editor and vanish live — see the two rules in `docs/APP-JSON.md`.
 - Animations are native: hide with `"%iv": false`, then a `PageLoaded` workflow of
   `PauseWFClient` → `ShowElement` → `AnimateElement`. See `docs/RECIPES.md`.
-- `examples/landing-page.ts` is a full worked page you can crib from.
 
 ## Boundaries
 

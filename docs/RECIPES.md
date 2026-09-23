@@ -73,13 +73,42 @@ Check both. An element with too little height renders in the editor and vanishes
 
 ## Build a whole page programmatically ✅ verified
 
-`examples/landing-page.ts` builds a full landing page (~80 elements plus a page-load animation workflow)
-in a couple of minutes of API calls. It's the best worked example of element JSON, positioning, colours,
-fonts, badges, cards and text sizing:
+Fixed-layout pages (`container_layout: "fixed"`) are the easiest to generate: every element is absolutely
+positioned with `%t/%l/%w/%h` and stacked with `%z`. A script that creates ~80 elements takes a couple of
+minutes of API calls. Helpers worth writing once:
 
-```bash
-node examples/landing-page.ts --wipe      # --wipe clears the page's existing elements and workflows
+```ts
+// A Text whose content doesn't fit its height VANISHES at runtime — always over-estimate.
+const minH = (size: number, lh: number) => Math.ceil(size * lh) + 6;
+
+const text = (o) => createNode(c, [...page, '%el'], { '%x': 'Text', '%dn': o.text.slice(0, 28), '%p': {
+  '%t': o.y, '%l': o.x, '%w': o.w, '%h': Math.max(o.h ?? 0, minH(o.size, o.lh ?? 1.5)), '%z': z++,
+  '%fs': o.size, '%fc': o.color, '%lh': o.lh ?? 1.5, '%fa': o.align,       // %fa: left|center|right
+  font_family: o.mono ? 'Courier New' : undefined,                          // ONE family, never a stack
+  font_weight: o.weight,                                                    // "500", "600"…
+  '%ls': o.ls,                                                              // letter spacing
+  '%iv': o.hidden ? false : undefined,                                      // hidden until a workflow shows it
+  fit_width: false, collapse_when_hidden: true, min_height_css: '0px', min_width_css: '0px',
+  '%3': { '%x': 'TextExpression', '%e': { '0': o.text } },
+}});
+
+const box = (o) => createNode(c, [...page, '%el'], { '%x': 'Group', '%dn': o.name, '%p': {
+  '%t': o.y, '%l': o.x, '%w': o.w, '%h': o.h, '%z': z++, '%bgc': o.bg, '%br': o.radius,
+  '%bw': 1, '%bc': o.border, '%bos': 'solid',                               // border
+  '%bs': 'outset', '%bsb': 14, '%bsc': 'rgba(15,23,42,0.07)', '%bv': 5, '%bh': 0,  // soft shadow
+  container_layout: 'fixed', min_height_css: '0px', min_width_css: '0px',
+}});
 ```
+
+Patterns that compose from those two: **cards** (a `box` plus a 3px-wide `box` at its left edge for an
+accent border), **pill badges** (a `box` with `%br` ≈ half its height plus a small centred Text — pad the
+width generously or the label wraps and disappears), **rails/dividers** (a 1–2px `box`), **terminal
+panels** (a dark `box` with 9px circular `box` dots and mono Text lines).
+
+Buttons are `%x: "Button"` with `%3` for the label, `%bgc`/`%fc` for colours and `%br` for the radius.
+
+Page background and height live on the page node: `%p.backdrop_bgcolor`, `%p.%bgc`, `%p.%h`,
+`%p.min_height_px`; the browser tab title is `%p.%t1` (a TextExpression).
 
 ### Copying an existing design
 

@@ -67,7 +67,6 @@ Map ids in log rows to logic with `find` + `get`.
 
 ```bash
 node $BI/scripts/design-spec.ts <url>   # real colours/fonts/sizes/geometry of any page — don't guess
-node $BI/examples/landing-page.ts --wipe  # full worked page: hero, terminal panel, cards, badges, reveal
 preview                                  # screenshot the RUNNING app, not just the editor
 ```
 Two runtime traps (details in `$BI/docs/APP-JSON.md`): a Text whose content doesn't fit its fixed height
