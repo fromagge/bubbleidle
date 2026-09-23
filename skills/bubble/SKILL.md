@@ -63,6 +63,21 @@ history; diff               # recent changes to the app (including by humans)
 ```
 Map ids in log rows to logic with `find` + `get`.
 
+## Building or copying a design
+
+```bash
+node $BI/scripts/design-spec.ts <url>   # real colours/fonts/sizes/geometry of any page — don't guess
+node $BI/examples/landing-page.ts --wipe  # full worked page: hero, terminal panel, cards, badges, reveal
+preview                                  # screenshot the RUNNING app, not just the editor
+```
+Two runtime traps (details in `$BI/docs/APP-JSON.md`): a Text whose content doesn't fit its fixed height
+disappears from the live page, and `font_family` must be a single family, not a CSS stack.
+
+Animations are native Bubble: `"%iv": false` on the element, then a `PageLoaded` workflow with
+`PauseWFClient` → `ShowElement` → `AnimateElement` per element.
+
+Keep scratch files out of the repo — use your own temp directory.
+
 ## If Bubble changed and something breaks
 
 `$BI/docs/DISCOVERY.md` explains how to re-record the protocol (`node $BI/scripts/record.ts --headed`) and

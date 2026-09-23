@@ -32,17 +32,32 @@ $ bubble undo 1
 
 ## Install
 
-Requirements: **Node ≥ 22** (uses native TypeScript execution), a Chromium/Chrome binary, `git`.
+Requirements: **Node ≥ 22** (runs the TypeScript directly), a Chromium/Chrome binary, `git`.
 
 ```bash
 git clone <this repo> && cd bubbleidle
-npm install                       # playwright-core, dotenv, MCP SDK, zod
-cp .env.example .env              # then fill it in (or put it in ~/.config/bubbleidle/.env)
-node bin/bubble.ts login          # logs in headlessly, saves cookies to .state/
-node bin/bubble.ts doctor         # verify config, session, permissions
-node bin/bubble.ts apps           # lists app ids the account can see → set BUBBLE_APP_ID
-node bin/bubble.ts snapshot       # first snapshot: the app is now in git
+./install.sh
 ```
+
+The installer checks requirements, installs dependencies, creates `~/.config/bubbleidle/.env`, and offers
+to put `bubble` on your PATH, register the MCP server with Claude Code, and link the skill and subagents
+into `~/.claude`. Then:
+
+```bash
+$EDITOR ~/.config/bubbleidle/.env   # bot account email + password
+node bin/bubble.ts login            # logs in headlessly, saves cookies to .state/
+node bin/bubble.ts apps             # app ids this account can see → set BUBBLE_APP_ID
+node bin/bubble.ts doctor           # should report can_edit
+node bin/bubble.ts snapshot         # the app is now in git
+```
+
+### Or let your agent install it
+
+Paste this to Claude Code (or any agent with shell access) in the cloned directory:
+
+> Read AGENTS.md in this repo, then run ./install.sh and walk me through what it needs from me.
+> Afterwards, verify with `node bin/bubble.ts doctor` and tell me what my Bubble bot account can and
+> cannot do.
 
 No Chromium? `npx playwright install chromium`, or set `CHROMIUM_PATH`.
 
@@ -85,11 +100,18 @@ Flags: `--app <id>` (default `$BUBBLE_APP_ID`), `--version test|live|<branch>` (
 
 ## Worked example
 
-[`examples/yaek-clone.ts`](examples/yaek-clone.ts) rebuilds the yaek.app landing page — nav, hero, a
-terminal panel, a five-item timeline, footer, ~60 elements — in one run, then snapshots it:
+[`examples/landing-page.ts`](examples/landing-page.ts) builds a complete landing page — nav, hero, a
+terminal panel with a staggered reveal animation, a five-item timeline of cards with badges, footer;
+~80 elements and a page-load workflow — in one run, then snapshots it:
 
 ```bash
-node examples/yaek-clone.ts --wipe
+node examples/landing-page.ts --wipe
+```
+
+To reproduce an existing design instead of inventing one, extract its real values first:
+
+```bash
+node scripts/design-spec.ts https://example.com    # computed colours, fonts, sizes, geometry, animations
 ```
 
 ## Background mode

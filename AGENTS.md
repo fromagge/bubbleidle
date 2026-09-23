@@ -82,6 +82,25 @@ Log rows carry the event/action names and ids; `find <id>` maps those to paths, 
 - **Unknown endpoint needed** → `node bin/bubble.ts raw <endpoint> '<json>'`; list them with
   `node scripts/bundle-endpoints.ts`.
 
+## Housekeeping
+
+- **Keep the repo clean.** Throwaway probe scripts, logs, crops and experiment output go in your own temp
+  or scratch directory — never in the repo. `.state/` is for real runtime state only (session cookies,
+  snapshots, journal, events) and is gitignored.
+- Recorded HARs contain **session cookies**. Don't commit them; delete them when you're done.
+- If you learn something durable about Bubble's format or behaviour, add it to `docs/` in the same session.
+  That's the point of this repo: the next agent shouldn't rediscover it.
+
+## Building UI
+
+- Copy an existing design with real numbers, not guesses: `node scripts/design-spec.ts <url>` prints the
+  page's computed colours, fonts, sizes, geometry and animations.
+- Verify with **both** `bubble screenshot <page>` (editor) and `bubble preview` (the running app). Elements
+  can render in the editor and vanish live — see the two rules in `docs/APP-JSON.md`.
+- Animations are native: hide with `"%iv": false`, then a `PageLoaded` workflow of
+  `PauseWFClient` → `ShowElement` → `AnimateElement`. See `docs/RECIPES.md`.
+- `examples/landing-page.ts` is a full worked page you can crib from.
+
 ## Boundaries
 
 - Don't touch apps other than the configured one unless asked (`--app` targets others).

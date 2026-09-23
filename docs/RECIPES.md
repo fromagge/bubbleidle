@@ -73,13 +73,40 @@ Check both. An element with too little height renders in the editor and vanishes
 
 ## Build a whole page programmatically ✅ verified
 
-`examples/yaek-clone.ts` rebuilds a real landing page (~60 elements: nav, hero, terminal panel, timeline,
-footer) in about 90 seconds of API calls. It's the best worked example of element JSON, positioning,
-colours, fonts and text sizing:
+`examples/landing-page.ts` builds a full landing page (~80 elements plus a page-load animation workflow)
+in a couple of minutes of API calls. It's the best worked example of element JSON, positioning, colours,
+fonts, badges, cards and text sizing:
 
 ```bash
-node examples/yaek-clone.ts --wipe        # --wipe clears the page's existing elements first
+node examples/landing-page.ts --wipe      # --wipe clears the page's existing elements and workflows
 ```
+
+### Copying an existing design
+
+Don't eyeball a screenshot and don't guess from a page's raw hex codes — a page's *applied* colours are
+what matter (a light page can contain a dark terminal panel, and you'll theme the whole thing wrong):
+
+```bash
+node scripts/design-spec.ts https://example.com --width 1440
+```
+It prints the page background, text colour, fonts and any CSS animations, and writes a JSON spec with
+every visible element's position, size, colour, font size/weight, radius, border and shadow. Build from
+those numbers, then compare with `bubble preview`.
+
+### Animations
+
+Bubble does these natively — no plugin. Hide the element on load (`"%iv": false` in its `%p`), then drive
+a `PageLoaded` workflow:
+
+```json
+{"%x": "PageLoaded", "%p": {},
+ "actions": {"0": {"%x": "PauseWFClient", "%p": {"length": 220, "hide_status_bar": true}},
+             "1": {"%x": "ShowElement",   "%p": {"%ei": "<element id>"}},
+             "2": {"%x": "AnimateElement","%p": {"%ei": "<element id>", "animation": "transition.slideUpIn",
+                                                 "customize_duration": true, "duration": 260}}}}
+```
+Repeat the triple per element for a staggered reveal. `animation` takes Velocity UI-pack names
+(`transition.fadeIn`, `transition.slideUpIn`, `transition.slideRightIn`, …).
 
 ## Check for problems ✅ verified
 
